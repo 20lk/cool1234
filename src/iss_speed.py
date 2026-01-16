@@ -2,7 +2,6 @@ from exif import Image
 from datetime import datetime
 import cv2
 import math
-from pathlib import path
 
 def get_time(image):
     with open(image, 'rb') as image_file:
@@ -36,14 +35,55 @@ def calculate_matches(descriptors_1, descriptors_2):
     matches = sorted(matches, key=lambda x: x.distance)
     return matches
 
-here = Path(__file__).resolve().parent
-image_path = here.parent / "assets" 
-image_1 = image_path / 'atlas_photo_012.jpg'
-image_2 = image_path /'atlas_photo_013.jpg'
+def display_matches(image_1_cv, keypoints_1, image_2_cv, keypoints_2, matches):
+    match_img = cv2.drawMatches(image_1_cv, keypoints_1, image_2_cv, keypoints_2, matches[:100], None)
+    resize = cv2.resize(match_img, (1600,600), interpolation = cv2.INTER_AREA)
+    cv2.imshow('matches', resize)
+    cv2.waitKey(0)
+    cv2.destroyWindow('matches')
+
+def find_matching_coordinates(keypoints_1, keypoints_2, matches):
+    coordinates_1 = []
+    coordinates_2 = []
+    for match in matches:
+        image_1_idx = match.queryIdx
+        image_2_idx = match.trainIdx
+        (x1,y1) = keypoints_1[image_1_idx].pt
+        (x2,y2) = keypoints_2[image_2_idx].pt
+        coordinates_1.append((x1,y1))
+        coordinates_2.append((x2,y2))
+    return coordinates_1, coordinates_2
+
+#The distance between matching features can be calculated.
+#This is the distance in the image though, so needs to be converted to the actual distance
+#On top of that, that may not be enough, since the ISS orbits at a greater radius than those features
+#Therefore, we must account for the greater distance and so speed, later
+
+def calculate_mean_distance(coordinates_1, coordinates_2):
+    all_distances = 0
+    merged_coordinates = list(zip(coordinates_1, coordinates_2))
+    for coordinate in merged_coordinates:
+        x_difference = coordinate[0][0] - coordinate[1][0]
+        y_difference = coordinate[0][1] - coordinate[1][1]
+        distance = math.hypot(x_difference, y_difference)
+        all_distances = all_distances + distance
+        return all_distances / len(merged_coordinates)
+
+image_1 = 'atlas_photo_012.jpg'
+image_2 = 'atlas_photo_013.jpg'
 
 
 time_difference = get_time_difference(image_1, image_2) # Get time difference between images
 image_1_cv, image_2_cv = convert_to_cv(image_1, image_2) # Create OpenCV image objects
 keypoints_1, keypoints_2, descriptors_1, descriptors_2 = calculate_features(image_1_cv, image_2_cv, 1000) # Get keypoints and descriptors
 matches = calculate_matches(descriptors_1, descriptors_2) # Match descriptors
-print(matches)
+ # Display matches
+coordinates_1, coordinates_2 = find_matching_coordinates(keypoints_1, keypoints_2, matches)
+print(coordinates_1[0], coordinates_2[0])
+
+
+coordinates_1, coordinates_2 = find_matching_coordinates(keypoints_1, keypoints_2, matches)
+average_feature_distance = calculate_mean_distance(coordinates_1, coordinates_2)
+print(average_feature_distance)
+
+average_feature_distance = calculate_mean_distance(coordinates_1, coordinates_2)
