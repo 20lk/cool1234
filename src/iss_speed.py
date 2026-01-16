@@ -84,3 +84,5 @@ def get_speed(image_1,image_2):
     average_feature_distance = calculate_mean_distance(coordinates_1, coordinates_2)
     speed = calculate_speed_in_kmps(average_feature_distance, 12648, time_difference)
     return speed
+
+print(get_speed('atlas_photo_012.jpg','atlas_photo_013.jpg'))
