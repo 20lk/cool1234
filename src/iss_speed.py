@@ -2,6 +2,7 @@ from exif import Image
 from datetime import datetime
 import cv2
 import math
+from pathlib import path
 
 def get_time(image):
     with open(image, 'rb') as image_file:
@@ -69,8 +70,10 @@ def calculate_mean_distance(coordinates_1, coordinates_2):
         all_distances = all_distances + distance
         return all_distances / len(merged_coordinates)
 
-image_1 = 'atlas_photo_012.jpg'
-image_2 = 'atlas_photo_013.jpg'
+here = Path(__file__).resolve().parent
+image_path = here.parent / "assets" 
+image_1 = image_path / 'atlas_photo_012.jpg'
+image_2 = image_path /'atlas_photo_013.jpg'
 
 
 time_difference = get_time_difference(image_1, image_2) # Get time difference between images
