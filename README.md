@@ -1,1 +1,1 @@
-# cool1234
+# Team cool1234 AstroPi project
