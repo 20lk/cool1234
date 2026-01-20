@@ -2,7 +2,7 @@ from exif import Image
 from datetime import datetime
 import cv2
 import math
-from pathlib import path
+import pathlib
 
 def get_time(image):
     with open(image, 'rb') as image_file:
@@ -68,25 +68,24 @@ def calculate_mean_distance(coordinates_1, coordinates_2):
         y_difference = coordinate[0][1] - coordinate[1][1]
         distance = math.hypot(x_difference, y_difference)
         all_distances = all_distances + distance
-        return all_distances / len(merged_coordinates)
+    return all_distances / len(merged_coordinates)
 
-here = Path(__file__).resolve().parent
-image_path = here.parent / "assets" 
+def calculate_speed_in_kmps(feature_distance, GSD, time_difference):
+    distance = feature_distance * GSD / 100000
+    speed = distance / time_difference
+    return speed
+
+here = pathlib.Path(__file__).resolve().parent
+image_path = here.parent / "src"  / "img"
 image_1 = image_path / 'atlas_photo_012.jpg'
 image_2 = image_path /'atlas_photo_013.jpg'
-
 
 time_difference = get_time_difference(image_1, image_2) # Get time difference between images
 image_1_cv, image_2_cv = convert_to_cv(image_1, image_2) # Create OpenCV image objects
 keypoints_1, keypoints_2, descriptors_1, descriptors_2 = calculate_features(image_1_cv, image_2_cv, 1000) # Get keypoints and descriptors
 matches = calculate_matches(descriptors_1, descriptors_2) # Match descriptors
- # Display matches
-coordinates_1, coordinates_2 = find_matching_coordinates(keypoints_1, keypoints_2, matches)
-print(coordinates_1[0], coordinates_2[0])
-
-
+display_matches(image_1_cv, keypoints_1, image_2_cv, keypoints_2, matches) # Display matches
 coordinates_1, coordinates_2 = find_matching_coordinates(keypoints_1, keypoints_2, matches)
 average_feature_distance = calculate_mean_distance(coordinates_1, coordinates_2)
-print(average_feature_distance)
-
-average_feature_distance = calculate_mean_distance(coordinates_1, coordinates_2)
+speed = calculate_speed_in_kmps(average_feature_distance, 12648, time_difference)
+print(speed)
