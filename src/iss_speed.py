@@ -2,6 +2,7 @@ from exif import Image
 from datetime import datetime
 import cv2
 import math
+import pathlib
 
 def get_time(image):
     with open(image, 'rb') as image_file:
@@ -74,9 +75,10 @@ def calculate_speed_in_kmps(feature_distance, GSD, time_difference):
     speed = distance / time_difference
     return speed
 
-image_1 = 'atlas_photo_012.jpg'
-image_2 = 'atlas_photo_013.jpg'
-
+here = pathlib.Path(__file__).resolve().parent
+image_path = here.parent / "src"  / "img"
+image_1 = image_path / 'atlas_photo_012.jpg'
+image_2 = image_path /'atlas_photo_013.jpg'
 
 time_difference = get_time_difference(image_1, image_2) # Get time difference between images
 image_1_cv, image_2_cv = convert_to_cv(image_1, image_2) # Create OpenCV image objects
