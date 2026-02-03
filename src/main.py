@@ -77,10 +77,10 @@ def calculate_speed_in_kmps(feature_distance, GSD, time_difference):
 
 here = pathlib.Path(__file__).resolve().parent
 image_path = here.parent / "src"  / "img"
-#image_1 = image_path / 'atlas_photo_012.jpg'
-#image_2 = image_path /'atlas_photo_013.jpg'
-image_1 = image_path /'lebron_2.jpg'
-image_2 = image_path / 'lebron.jpg'
+image_1 = image_path / 'atlas_photo_012.jpg'
+image_2 = image_path /'atlas_photo_013.jpg'
+#image_1 = image_path /'lebron_2.jpg'
+#image_2 = image_path / 'lebron.jpg'
 
 time_difference = get_time_difference(image_1, image_2) # Get time difference between images
 image_1_cv, image_2_cv = convert_to_cv(image_1, image_2) # Create OpenCV image objects
