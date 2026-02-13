@@ -2,11 +2,6 @@ from exif import Image
 from datetime import datetime
 import cv2
 import math
-import pathlib
-
-base_folder = pathlib.Path(__file__).parent.resolve()
-image_folder = base_folder.parent / "img"
-pathlib.Path.mkdir(image_folder, parents=True, exist_ok=True)
 
 def get_time(image):
     with open(image, 'rb') as image_file:
@@ -14,6 +9,7 @@ def get_time(image):
         time_str = img.get("datetime_original")
         time = datetime.strptime(time_str, '%Y:%m:%d %H:%M:%S')
     return time
+    
     
 def get_time_difference(image_1, image_2):
     time_1 = get_time(image_1)
