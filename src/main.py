@@ -1,93 +1,83 @@
-from exif import Image
-from datetime import datetime
-import cv2
-import math
-import pathlib
+import iss_speed
+#to call iss_speed function, it is "iss_speed.get_speed('x','y')", where x and y are file names are the same format as this example 'atlas_photo_012.jpg'
 
-def get_time(image):
-    with open(image, 'rb') as image_file:
-        img = Image(image_file)
-        time_str = img.get("datetime_original")
-        time = datetime.strptime(time_str, '%Y:%m:%d %H:%M:%S')
-    return time
+from picamzero import Camera
 
+cam = Camera()
 
-def get_time_difference(image_1, image_2):
-    time_1 = get_time(image_1)
-    time_2 = get_time(image_2)
-    time_difference = time_2 - time_1
-    return time_difference.seconds
+from pathlib import Path
+base_folder = Path(__file__).parent.resolve()
+
+from datetime import datetime, timedelta
+from time import sleep
 
 
-def convert_to_cv(image_1, image_2):
-    image_1_cv = cv2.imread(image_1, 0)
-    image_2_cv = cv2.imread(image_2, 0)
-    return image_1_cv, image_2_cv
+start_time = datetime.now()
+now_time = datetime.now()
 
-def calculate_features(image_1, image_2, feature_number):
-    orb = cv2.ORB_create(nfeatures = feature_number)
-    keypoints_1, descriptors_1 = orb.detectAndCompute(image_1_cv, None)
-    keypoints_2, descriptors_2 = orb.detectAndCompute(image_2_cv, None)
-    return keypoints_1, keypoints_2, descriptors_1, descriptors_2
 
-def calculate_matches(descriptors_1, descriptors_2):
-    brute_force = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-    matches = brute_force.match(descriptors_1, descriptors_2)
-    matches = sorted(matches, key=lambda x: x.distance)
-    return matches
+def get_avg_speed(speeds):
+    total = 0
+    for speed in speeds:
+        total += speed
+    avg_speed = total/len(speeds)
+    return avg_speed
 
-def display_matches(image_1_cv, keypoints_1, image_2_cv, keypoints_2, matches):
-    match_img = cv2.drawMatches(image_1_cv, keypoints_1, image_2_cv, keypoints_2, matches[:100], None)
-    resize = cv2.resize(match_img, (1600,600), interpolation = cv2.INTER_AREA)
-    cv2.imshow('matches', resize)
-    cv2.waitKey(0)
-    cv2.destroyWindow('matches')
+def fivesf(num):
+    out = 0
+    if num % 10 == num:
+        out = round(num, 4)
+    elif num % 100 == num:
+        out = round(num, 3)
+    elif num % 1000 == num:
+        out = round(num, 2)
+    
+    return out
+#code start
+#cam.take_photo("image1.jpg")
+#cam.take_photo("image2.jpg")
+    
 
-def find_matching_coordinates(keypoints_1, keypoints_2, matches):
-    coordinates_1 = []
-    coordinates_2 = []
-    for match in matches:
-        image_1_idx = match.queryIdx
-        image_2_idx = match.trainIdx
-        (x1,y1) = keypoints_1[image_1_idx].pt
-        (x2,y2) = keypoints_2[image_2_idx].pt
-        coordinates_1.append((x1,y1))
-        coordinates_2.append((x2,y2))
-    return coordinates_1, coordinates_2
+data_file = base_folder / "result.txt"
 
-#The distance between matching features can be calculated.
-#This is the distance in the image though, so needs to be converted to the actual distance
-#On top of that, that may not be enough, since the ISS orbits at a greater radius than those features
-#Therefore, we must account for the greater distance and so speed, later
+#code finish
+seconds = 0
+photos = []
+pair = []
+count = 0
 
-def calculate_mean_distance(coordinates_1, coordinates_2):
-    all_distances = 0
-    merged_coordinates = list(zip(coordinates_1, coordinates_2))
-    for coordinate in merged_coordinates:
-        x_difference = coordinate[0][0] - coordinate[1][0]
-        y_difference = coordinate[0][1] - coordinate[1][1]
-        distance = math.hypot(x_difference, y_difference)
-        all_distances = all_distances + distance
-    return all_distances / len(merged_coordinates)
+speeds = []
+avg_speed = 0
+while (now_time <= start_time + timedelta(minutes=9)):
+    if seconds != int((now_time - start_time).total_seconds()):
+        seconds = int((now_time - start_time).total_seconds())
+        print(seconds)
+        # run code here
 
-def calculate_speed_in_kmps(feature_distance, GSD, time_difference):
-    distance = feature_distance * GSD / 100000
-    speed = distance / time_difference
-    return speed
+        # imagine u take a photo
+        if (seconds % 15 == 0): # runs every 5 seconds
+            print("taking photo")
+            cam.take_photo(f"image{count}.jpg")
+            pair.append(f"image{count}.jpg")
+            count += 1
 
-here = pathlib.Path(__file__).resolve().parent
-image_path = here.parent / "src"  / "img"
-image_1 = image_path / 'atlas_photo_012.jpg'
-image_2 = image_path /'atlas_photo_013.jpg'
-#image_1 = image_path /'lebron_2.jpg'
-#image_2 = image_path / 'lebron.jpg'
+        if len(pair) == 2: # pair finished
+            photos.append(pair)
 
-time_difference = get_time_difference(image_1, image_2) # Get time difference between images
-image_1_cv, image_2_cv = convert_to_cv(image_1, image_2) # Create OpenCV image objects
-keypoints_1, keypoints_2, descriptors_1, descriptors_2 = calculate_features(image_1_cv, image_2_cv, 1000) # Get keypoints and descriptors
-matches = calculate_matches(descriptors_1, descriptors_2) # Match descriptors
-display_matches(image_1_cv, keypoints_1, image_2_cv, keypoints_2, matches) # Display matches
-coordinates_1, coordinates_2 = find_matching_coordinates(keypoints_1, keypoints_2, matches)
-average_feature_distance = calculate_mean_distance(coordinates_1, coordinates_2)
-speed = calculate_speed_in_kmps(average_feature_distance, 12648, time_difference)
-print(speed)
+            speed = iss_speed.get_speed(pair[0], pair[1])
+            speeds.append(speed)
+            print(speed)
+            avg_speed = get_avg_speed(speeds)
+
+
+            with open(data_file, "w", buffering=1) as f:
+                f.write(f"{fivesf(avg_speed)}")
+
+            pair = []
+
+    # Update the current time
+    now_time = datetime.now()
+# Out of the loop — stopping
+print(photos)
+print(avg_speed)
+print(speeds)
